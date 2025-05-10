@@ -260,6 +260,19 @@
         const tanggalKunjungan = document.getElementById('tanggal_kunjungan').value;
         const sesiKunjungan = document.getElementById('sesi_kunjungan').value;
 
+        // Mendapatkan tanggal saat ini
+        const today = new Date();
+        const todayString = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
+        const twoDaysLater = new Date(today);
+        twoDaysLater.setDate(today.getDate() + 2);
+        const twoDaysLaterString = twoDaysLater.toISOString().split('T')[0]; // Format YYYY-MM-DD
+
+        // Memeriksa apakah tanggal kunjungan valid
+        if (tanggalKunjungan < todayString || tanggalKunjungan > twoDaysLaterString) {
+          alert("Pendaftaran hanya berlaku untuk hari ini dan dua hari setelahnya.");
+          return;
+        }
+
         const totalKunjungan = await getNomorAntrian(tanggalKunjungan, sesiKunjungan);
 
         if (totalKunjungan === null) return;
@@ -268,7 +281,7 @@
           .then(function(response) {
             alert(`Pendaftaran berhasil! Konfirmasi telah dikirim ke email Anda.`);
             document.getElementById('visitorForm').reset();
-            window.location.href = "https://riskyrendy7.github.io/layanan-kunjungan";
+            window.location.href = "https://lapaskotabaru.github.io/layanan-kunjungan";
           }, function(error) {
             alert('Terjadi kesalahan: ' + error);
           });
