@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Layanan Kunjungan - SI CENI</title>
+
+  <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #001f3f;
+      color: white;
+      padding: 2rem;
+    }
+
+    h1, h2 {
+      color: #f6c700;
+      text-align: center;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .header img {
+      width: 150px;
+    }
+
+    .header p {
+      font-size: 1.2rem;
+      color: #f6c700;
+    }
+
+    .jadwal-box {
+      max-width: 600px;
+      margin: 2rem auto;
+      background-color: #ffffff11;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(246, 199, 0, 0.2);
+      line-height: 1.6;
+    }
+
+    .jadwal-box strong {
+      display: block;
+      margin-top: 1rem;
+      font-size: 1.1rem;
+    }
+
+    .jadwal-box ul {
+      list-style: none;
+      padding-left: 1rem;
+    }
+
+    .jadwal-box li {
+      margin-bottom: 0.5rem;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 4rem;
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+
+    .back-button {
+      display: inline-block;
+      margin: 2rem auto;
+      padding: 0.8rem 1.5rem;
+      background-color: #f6c700;
+      color: #001f3f;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      transition: transform 0.2s ease, background-color 0.3s ease;
+      text-align: center;
+      display: block;
+      width: fit-content;
+    }
+
+    .back-button:hover {
+      background-color: #ffdb4d;
+      transform: scale(1.05);
+    }
+
+    .form-container {
+      background-color: #ffffff;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      margin: 2rem auto;
+      color: #333; /* Pastikan teks di form terlihat jelas */
+    }
+
+    label {
+      font-weight: bold;
+      margin-top: 1rem;
+      color: #333; /* Warna label yang lebih kontras */
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.8rem;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      color: #333; /* Pastikan teks input dapat terbaca */
+      background-color: #f9f9f9; /* Warna latar belakang input agar lebih terang */
+    }
+
+    button {
+      background-color: #f6c700;
+      padding: 0.8rem;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-weight: bold;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #ffdb4d;
+    }
+  </style>
+
+  <script>
+    // API Key dan ID Spreadsheet Google
+    const API_KEY = 'AIzaSyDgTOKjfgeAea4zPAvGuSA8y7sKcmwEOLE';  // Ganti dengan API Key Anda
+    const SPREADSHEET_ID = '1mKZ07kPPgjEl2ZxYFebxJA9ileRUqZBtW-Hgixhb8a4';  // ID Spreadsheet Anda
+
+    // Inisialisasi EmailJS dengan Public Key
+    emailjs.init("v7FQliWty-kceC2Bk");  // Public Key dari EmailJS
+
+    // Fungsi untuk mengambil nomor antrian terbaru dan jumlah kunjungan untuk tanggal tertentu
+    async function getNomorAntrian(tanggalKunjungan) {
+      const formattedDate = tanggalKunjungan.split('-').join('');
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Tanggal!A:B?key=${API_KEY}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      let nomorUrut = 1;  // Mulai dari nomor urut 1
+      let totalKunjungan = 0;
+      const rows = data.values;
+      if (rows) {
+        for (const row of rows) {
+          if (row[0] === formattedDate) {
+            nomorUrut = parseInt(row[1]) + 1;  // Menambah nomor antrian untuk tanggal yang sama
+            totalKunjungan += 1;
+          }
+        }
+      }
+
+      if (totalKunjungan >= 50) {
+        return { nomorUrut: null, totalKunjungan };
+      }
+
+      return { nomorUrut, totalKunjungan };
+    }
+
+    // Fungsi untuk memperbarui nomor antrian di Google Sheets
+    async function updateNomorAntrian(tanggalKunjungan, nomorUrut) {
+      const formattedDate = tanggalKunjungan.split('-').join('');
+      const range = `Tanggal!A:B`;
+      const value = [[formattedDate, nomorUrut]];
+
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED&key=${API_KEY}`;
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          range: range,
+          values: value,
+        }),
+      });
+
+      const data = await response.json();
+      return data;
+    }
+
+    // Menunggu dokumen dimuat sepenuhnya sebelum menjalankan JavaScript
+    document.addEventListener("DOMContentLoaded", function() {
+      // Event listener untuk formulir saat disubmit
+      document.getElementById("visitorForm").addEventListener("submit", async function(event) {
+        event.preventDefault(); // Menghentikan form untuk dikirim secara default
+
+        const formData = new FormData(this);  // Mengambil data dari form
+
+        // Membuat nomor antrian berdasarkan tanggal kunjungan
+        const tanggalKunjungan = document.getElementById('tanggal_kunjungan').value;
+
+        // Ambil nomor antrian dan jumlah kunjungan dari Google Sheets
+        const { nomorUrut, totalKunjungan } = await getNomorAntrian(tanggalKunjungan);
+
+        if (nomorUrut === null) {
+          alert("Pendaftaran sudah penuh untuk tanggal ini. Silakan pilih tanggal lain.");
+          return;
+        }
+
+        const nomorAntrian = `${tanggalKunjungan.split('-').join('')}-${String(nomorUrut).padStart(3, '0')}`;
+
+        // Menambahkan nomor antrian ke form data
+        formData.append('nomor_antrian', nomorAntrian);
+
+        // Update nomor antrian di Google Sheets
+        await updateNomorAntrian(tanggalKunjungan, nomorUrut);
+
+        // Mengirimkan data form ke EmailJS
+        emailjs.sendForm("service_k8nki18", "template_3sbeqwd", this)
+          .then(function(response) {
+            alert(`Pendaftaran berhasil! Nomor antrian Anda: ${nomorAntrian}.\nKonfirmasi telah dikirim ke email Anda.`);
+            document.getElementById('visitorForm').reset(); // Reset formulir
+            window.location.href = "https://riskyrendy7.github.io/layanan-kunjungan"; // Arahkan kembali ke halaman utama
+          }, function(error) {
+            alert('Terjadi kesalahan: ' + error);
+          });
+      });
+    });
+  </script>
+</head>
+<body>
+  <div class="header">
+    <img src="imipas.png" alt="IMIPAS Logo">
+    <p>KEMENTERIAN IMIGRASI DAN PEMASYARAKATAN</p>
+    <p>LAPAS KELAS IIA KOTABARU</p>
+  </div>
+
+  <h1>SI CENI - Layanan Kunjungan</h1>
+  <h2>JADWAL LAYANAN KUNJUNGAN</h2>
+
+  <div class="jadwal-box">
+    <strong>- NARAPIDANA</strong>
+    <ul>
+      <li>SENIN (09.00 WITA s.d 11.30 WITA)</li>
+      <li>RABU (09.00 WITA s.d 11.30 WITA)</li>
+      <li>SABTU (09.00 WITA s.d 11.00 WITA)</li>
+    </ul>
+
+    <strong>- TAHANAN</strong>
+    <ul>
+      <li>SELASA (09.00 WITA s.d 11.30 WITA)</li>
+      <li>KAMIS (09.00 WITA s.d 11.30 WITA)</li>
+    </ul>
+
+    <p><strong>Catatan:</strong></p>
+    <ol>
+      <li>Untuk Kunjungan Tahanan Wajib membawa izin kunjungan dari Instansi Penahan</li>
+      <li>Hari Minggu dan Tanggal Merah Layanan Libur</li>
+    </ol>
+  </div>
+
+  <h2>Pendaftaran Kunjungan Online</h2>
+
+  <div class="form-container">
+    <form id="visitorForm">
+      <label for="nama">Nama Pengunjung</label>
+      <input type="text" id="nama" name="nama" required>
+
+      <label for="nik">NIK/No. SIM/No. Identitas</label>
+      <input type="text" id="nik" name="nik" required>
+
+      <label for="jenis_kelamin">Jenis Kelamin</label>
+      <select id="jenis_kelamin" name="jenis_kelamin" required>
+        <option value="laki-laki">Laki-laki</option>
+        <option value="perempuan">Perempuan</option>
+      </select>
+
+      <label for="alamat">Alamat Pengunjung</label>
+      <input type="text" id="alamat" name="alamat" required>
+
+      <label for="no_hp">No. HP</label>
+      <input type="tel" id="no_hp" name="no_hp" required>
+
+      <label for="warga_binaan">Nama Warga Binaan</label>
+      <input type="text" id="warga_binaan" name="warga_binaan" required>
+
+      <label for="blok_hunian">Blok Hunian (Opsional)</label>
+      <input type="text" id="blok_hunian" name="blok_hunian">
+
+      <label for="hubungan">Hubungan dengan Warga Binaan</label>
+      <input type="text" id="hubungan" name="hubungan" required>
+
+      <label for="jumlah_pengikut">Jumlah Pengikut (Maksimal 3 orang)</label>
+      <input type="number" id="jumlah_pengikut" name="jumlah_pengikut" min="0" max="3" required>
+
+      <label for="tanggal_kunjungan">Tanggal Kunjungan</label>
+      <input type="date" id="tanggal_kunjungan" name="tanggal_kunjungan" min="" required>
+
+      <label for="email">Alamat Email</label>
+      <input type="email" id="email" name="email" required>
+
+      <button type="submit">Daftar Kunjungan</button>
+    </form>
+  </div>
+
+  <a href="https://riskyrendy7.github.io/si-ceni" class="back-button">⬅️ Kembali ke Halaman Utama</a>
+
+  <footer>
+    &copy; 2025 Lapas Kelas IIA Kotabaru | SI CENI
+  </footer>
+
+</body>
+</html>
