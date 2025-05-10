@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Layanan Kunjungan - SI CENI</title>
+  <title>LAYANAN KUNJUNGAN - SI CENI</title>
 
   <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
 
@@ -130,103 +130,6 @@
     }
   </style>
 
-  <script>
-    // API Key dan ID Spreadsheet Google
-    const API_KEY = 'AIzaSyDgTOKjfgeAea4zPAvGuSA8y7sKcmwEOLE';  // Ganti dengan API Key Anda
-    const SPREADSHEET_ID = '1mKZ07kPPgjEl2ZxYFebxJA9ileRUqZBtW-Hgixhb8a4';  // ID Spreadsheet Anda
-
-    // Inisialisasi EmailJS dengan Public Key
-    emailjs.init("v7FQliWty-kceC2Bk");  // Public Key dari EmailJS
-
-    // Fungsi untuk mengambil nomor antrian terbaru dan jumlah kunjungan untuk tanggal tertentu
-    async function getNomorAntrian(tanggalKunjungan) {
-      const formattedDate = tanggalKunjungan.split('-').join('');
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Tanggal!A:B?key=${API_KEY}`;
-
-      const response = await fetch(url);
-      const data = await response.json();
-
-      let nomorUrut = 1;  // Mulai dari nomor urut 1
-      let totalKunjungan = 0;
-      const rows = data.values;
-      if (rows) {
-        for (const row of rows) {
-          if (row[0] === formattedDate) {
-            nomorUrut = parseInt(row[1]) + 1;  // Menambah nomor antrian untuk tanggal yang sama
-            totalKunjungan += 1;
-          }
-        }
-      }
-
-      if (totalKunjungan >= 50) {
-        return { nomorUrut: null, totalKunjungan };
-      }
-
-      return { nomorUrut, totalKunjungan };
-    }
-
-    // Fungsi untuk memperbarui nomor antrian di Google Sheets
-    async function updateNomorAntrian(tanggalKunjungan, nomorUrut) {
-      const formattedDate = tanggalKunjungan.split('-').join('');
-      const range = `Tanggal!A:B`;
-      const value = [[formattedDate, nomorUrut]];
-
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED&key=${API_KEY}`;
-
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          range: range,
-          values: value,
-        }),
-      });
-
-      const data = await response.json();
-      return data;
-    }
-
-    // Menunggu dokumen dimuat sepenuhnya sebelum menjalankan JavaScript
-    document.addEventListener("DOMContentLoaded", function() {
-      // Event listener untuk formulir saat disubmit
-      document.getElementById("visitorForm").addEventListener("submit", async function(event) {
-        event.preventDefault(); // Menghentikan form untuk dikirim secara default
-
-        const formData = new FormData(this);  // Mengambil data dari form
-
-        // Membuat nomor antrian berdasarkan tanggal kunjungan
-        const tanggalKunjungan = document.getElementById('tanggal_kunjungan').value;
-
-        // Ambil nomor antrian dan jumlah kunjungan dari Google Sheets
-        const { nomorUrut, totalKunjungan } = await getNomorAntrian(tanggalKunjungan);
-
-        if (nomorUrut === null) {
-          alert("Pendaftaran sudah penuh untuk tanggal ini. Silakan pilih tanggal lain.");
-          return;
-        }
-
-        const nomorAntrian = `${tanggalKunjungan.split('-').join('')}-${String(nomorUrut).padStart(3, '0')}`;
-
-        // Menambahkan nomor antrian ke form data
-        formData.append('nomor_antrian', nomorAntrian);
-
-        // Update nomor antrian di Google Sheets
-        await updateNomorAntrian(tanggalKunjungan, nomorUrut);
-
-        // Mengirimkan data form ke EmailJS
-        emailjs.sendForm("service_k8nki18", "template_3sbeqwd", this)
-          .then(function(response) {
-            alert(`Pendaftaran berhasil! Nomor antrian Anda: ${nomorAntrian}.\nKonfirmasi telah dikirim ke email Anda.`);
-            document.getElementById('visitorForm').reset(); // Reset formulir
-            window.location.href = "https://riskyrendy7.github.io/layanan-kunjungan"; // Arahkan kembali ke halaman utama
-          }, function(error) {
-            alert('Terjadi kesalahan: ' + error);
-          });
-      });
-    });
-  </script>
 </head>
 <body>
   <div class="header">
@@ -296,6 +199,14 @@
       <label for="tanggal_kunjungan">Tanggal Kunjungan</label>
       <input type="date" id="tanggal_kunjungan" name="tanggal_kunjungan" min="" required>
 
+      <label for="sesi_kunjungan">Sesi Kunjungan</label>
+        <select id="sesi_kunjungan" name="sesi_kunjungan" required>
+        <option value="09:00-09:30">SESI 1 (09:00 - 09:30)</option>
+        <option value="09:45-10:15">SESI 2 (09:45 - 10:15)</option>
+        <option value="10:30-11:00">SESI 3 (10:30 - 11:00)</option>
+    </select>
+
+
       <label for="email">Alamat Email</label>
       <input type="email" id="email" name="email" required>
 
@@ -308,6 +219,62 @@
   <footer>
     &copy; 2025 Lapas Kelas IIA Kotabaru | SI CENI
   </footer>
+
+  <script type="text/javascript">
+    const API_KEY = 'AIzaSyDgTOKjfgeAea4zPAvGuSA8y7sKcmwEOLE';  
+    const SPREADSHEET_ID = '1mKZ07kPPgjEl2ZxYFebxJA9ileRUqZBtW-Hgixhb8a4';  
+
+    emailjs.init("v7FQliWty-kceC2Bk");  
+
+    async function getNomorAntrian(tanggalKunjungan, sesiKunjungan) {
+      const formattedDate = tanggalKunjungan.split('-').join('');
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Tanggal!A:C?key=${API_KEY}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      let totalKunjungan = 0;
+      const rows = data.values;
+      if (rows) {
+        for (const row of rows) {
+          if (row[0] === formattedDate && row[2] === sesiKunjungan) {
+            totalKunjungan += 1;
+          }
+        }
+      }
+
+      if (totalKunjungan >= 50) {
+        alert("Pendaftaran sudah penuh untuk tanggal dan sesi ini. Silakan pilih tanggal atau sesi lain.");
+        return null;
+      }
+
+      return { totalKunjungan };
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      document.getElementById("visitorForm").addEventListener("submit", async function(event) {
+        event.preventDefault(); 
+
+        const formData = new FormData(this);
+
+        const tanggalKunjungan = document.getElementById('tanggal_kunjungan').value;
+        const sesiKunjungan = document.getElementById('sesi_kunjungan').value;
+
+        const totalKunjungan = await getNomorAntrian(tanggalKunjungan, sesiKunjungan);
+
+        if (totalKunjungan === null) return;
+
+        emailjs.sendForm("service_k8nki18", "template_3sbeqwd", this)
+          .then(function(response) {
+            alert(`Pendaftaran berhasil! Konfirmasi telah dikirim ke email Anda.`);
+            document.getElementById('visitorForm').reset();
+            window.location.href = "https://riskyrendy7.github.io/layanan-kunjungan";
+          }, function(error) {
+            alert('Terjadi kesalahan: ' + error);
+          });
+      });
+    });
+  </script>
 
 </body>
 </html>
